@@ -36,6 +36,23 @@ io.on('connection', function(socket) {
     console.table(rooms);
     console.table(connected);
   })
+
+  // WHEN PLAYER JOINS ROOM ( takes id of room as parametr )
+  socket.on('join room', function(id){
+    // IF ROOM EXISTS
+    if(typeof rooms[id] != undefined){
+      // IF ROOM IS NOT FULL
+      if(Object.keys(rooms[id].players).length != 10){
+        // PLAYER'S ROOM PROPERTY IS NOW THE ROOM OBJECT
+        connected[socket.id].room = rooms[id];
+        rooms[id].players[socket.id] = socket.id;
+        return('Room joined!');
+      } else {
+        return('Room full!');
+      }
+    } else { return('Room does not exist!'); }
+  })
+
   // WHEN PLAYER DISCONNECT
   socket.on('disconnect',function(){
     // CHECK IS CONNETCED CLIENT HAS A ROOM
