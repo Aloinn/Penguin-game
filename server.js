@@ -57,6 +57,7 @@ io.on('connection', function(socket) {
   socket.on('disconnect',function(){
     // CHECK IS CONNETCED CLIENT HAS A ROOM
     if(typeof connected[socket.id].room != 'undefined'){
+      console.log('room!');
       // DELETE SOCKET ID FROM LIST OF PLAYERS IN ROOM
       delete connected[socket.id].room.players[socket.id];
       // CHECK IF ROOM IS EMPTY

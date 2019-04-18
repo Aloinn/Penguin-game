@@ -2,16 +2,43 @@
   <head>
     <title>Penguin Release</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/static/style.min.css">.
+    <link rel="stylesheet" type="text/css" href="/static/style.css">.
     <script src="/socket.io/socket.io.js"></script>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
-    <div class="menu-container flex-container flex-vertical">
-      <input class="flex-item" type="text" onclick="clearfield(this)" id="name-input" value="Enter your NAME here" maxlength="10">
+    <canvas id="myCanvas"></canvas>
+    <div id="main-menu" class="menu-container menu-large flex-container flex-vertical">
+      <form autocomplete="off" method="post" action="">
+        <input onfocus="if(this.value=='Enter your NAME here') this.value='';" class="flex-item"
+        type="text" onclick="clearfield(this)" id="name-input" value="Enter your NAME here" maxlength="10">
+      </form>
       <a href="#" class="flex-item"> Play </a>
-      <a href="#" class="flex-item"> Create room </a>
+      <a href="#" class="flex-item" onclick="displaySection(menuRoom)"> Create room </a>
+      <a href="#" class="flex-item" onclick="displaySection(menuJoin)"> Join room </a>
+    </div>
+
+    <div id="join-menu" class="menu-container menu-medium flex-container flex-vertical">
+      <form autocomplete="off" method="post" action="">
+        <input onfocus="if(this.value=='Enter ROOM CODE here') this.value='';" class="flex-item"
+        type="text" onclick="clearfield(this)" id="code-input" value="Enter ROOM CODE here">
+      </form>
       <a href="#" class="flex-item"> Join room </a>
+      <a href="#" class="flex-item" onclick="displaySection(menuMain)"> Back </a>
+    </div>
+
+    <div id="room-menu" class="menu-container menu-large flex-container flex-vertical">
+      <div class="flex-item flex-container flex-wrap">
+        <p href="#" id="p1" class="flex-item half">_</p>
+        <p href="#" id="p2" class="flex-item half">_</p>
+        <p href="#" id="p3" class="flex-item half">_</p>
+        <p href="#" id="p4" class="flex-item half">_</p>
+        <p href="#" id="p5" class="flex-item half">_</p>
+        <p href="#" id="p6" class="flex-item half">_</p>
+        <p href="#" id="p7" class="flex-item half">_</p>
+        <p href="#" id="p8" class="flex-item half">_</p>
+      </div>
+      <a href="#" class="flex-item full" onclick="displaySection(menuMain)"> Back </a>
+
     </div>
 
   </body>

@@ -5,6 +5,19 @@ var socket = io();
 socket.on('message', function(data) {
   console.log(data);
 });
+// MENU SETUP
+var menuMain = document.getElementById("main-menu");
+var menuJoin = document.getElementById("join-menu");
+var menuRoom = document.getElementById("room-menu");
+
+function displaySection(display){
+  menuMain.style.display = "none";
+  menuJoin.style.display = "none";
+  menuRoom.style.display = "none";
+  
+  if(display)
+  {display.style.display = "flex";}
+}
 
 // CANVAS SETUP
 var canvas = document.getElementById("myCanvas");
