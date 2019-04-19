@@ -150,11 +150,13 @@ io.on('connection', function(socket) {
 var rooms = {};
 // ROOMS OBJECT
 var states = {
-  menu: 0,
-  playing: 1,
-  waiting: 2
+  menu: 'menu',
+  showing: 'showing',
+  playing: 'playing',
+  waiting: 'waiting',
 }
 Object.freeze(states);
+
 class room{
   // CREATING THE ROOM
   constructor(){
@@ -217,7 +219,7 @@ class game{
       num += 1;
     }
 
-    io.sockets.in(rmnm).emit('game state', this.objects);
+    io.sockets.in(rmnm).emit('game state', this.objects, this.state);
   }
 
   // EVERY STEP IN GAME
@@ -226,13 +228,67 @@ class game{
     if(typeof rooms[this.rmnm] != 'undefined'){
       switch(this.state){
         case states.waiting:
-        // GAME IS WAITNG FOR USER INPUTS
+          this.time -= (1/60);
+          this.objects['broadcast'].msg = Math.floor(this.time);
+          if(Math.floor(this.time) === -1){
+            this.state = states.showing;
+            this.objects['broadcast'].msg = 'waiting';
+          }
           break;
-        case states.playing:
+        case states.showing:
+          this.time -= (2/60);
+          // WAITING . . . EFFECT
+          switch(Math.floor(this.time)){
+            case -1:
+            this.objects['broadcast'].msg = 'waiting';
+            break;
+            case -2:
+            this.objects['broadcast'].msg = 'waiting.';
+            break;
+            case -3:
+            this.objects['broadcast'].msg = 'waiting..';
+            break;
+            case -4:
+            this.objects['broadcast'].msg = 'waiting...';
+            break;
+            case -5:
+            this.time = 0;
+            this.state = states.playing;
+            break;
+          }
+
         // GAME DOES PHYSICS AND COLLISIONS
           break;
+        case states.playing:
+          this.time -= (3/60);
+          switch(Math.floor(this.time)){
+            case -1:
+            this.objects['broadcast'].msg = 'waiting';
+            break;
+            case -2:
+            this.objects['broadcast'].msg = 'waiting.';
+            break;
+            case -3:
+            this.objects['broadcast'].msg = 'waiting..';
+            break;
+            case -4:
+            this.objects['broadcast'].msg = 'waiting...';
+            break;
+            case -5:
+            this.time = 0;
+            break;
+          }
+          // PHYSICS LOGIC
+          for(var id in this.objects){
+            if(this.objects[id].type === 'player'){
+              var player = this.objects[id];
+              player.move();
+
+            }
+          }
+          break;
       }
-      io.sockets.in(this.rmnm).emit('game state', this.objects);
+      io.sockets.in(this.rmnm).emit('game state', this.objects, this.state);
     } else {clearInterval(n);}
   }
 
@@ -263,11 +319,11 @@ class player{
 
   move(){
     // MOVE BASED ON SPEED
-    this.x += dx;
-    this.y += dy;
+    this.x += this.dx/(4*1000/60);
+    this.y += this.dy/(4*1000/60);
     // DECELERATE
-    this.dx *= 0.9;
-    this.dy *= 0.9;
+    this.dx *= 0.985;
+    this.dy *= 0.985;
   }
 
   checkCollide(other){

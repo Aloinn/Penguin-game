@@ -31,7 +31,7 @@ function canvasetup(){
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
   offsetX = canvas.width/2;
-  offsetY = canvas.height/2;
+  offsetY = canvas.height*5.5/10;
   ratioX = canvas.width/800;
   ratioY = canvas.height/600;
   ratio  = Math.min(ratioX,ratioY);
@@ -142,9 +142,11 @@ function drawPlayer(object){
   }
 }
 // DRAW INFO IF OBJECT IS PLAYER'S
-function drawInfo(object){
+function drawInfo(object, radius){
   // DRAW TRAJECTORY
-  arrow('lightgray',object.x + offsetX, object.y + offsetY, offsetX+ mouse.x, offsetY+mouse.y,
+  var color = undefined;
+  Math.sqrt(mouse.x*mouse.x + mouse.y*mouse.y) > radius ? color = 'rgba(145, 145, 145, 0.69)' : color = 'lightgray';
+  arrow(color ,object.x + offsetX, object.y + offsetY, offsetX+ mouse.x, offsetY+mouse.y,
       Math.min((Math.sqrt(Math.pow(object.x - mouse.x,2)+Math.pow(object.y - mouse.y,2))/object.max),2))
 
   if(object.dx != 0 && object.dy != 0){
@@ -153,23 +155,48 @@ function drawInfo(object){
   }
 }
 
-socket.on('game state',function(objects){
+socket.on('game state',function(objects, state){
   displaySection();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "lightgray";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   // DRAW PLATFORM
   ctx.beginPath();
   ctx.arc(offsetX, offsetY, objects['platform'].radius , 0, 2 * Math.PI, false);
   ctx.fillStyle = '#efefef'
   ctx.fill();
+  ctx.strokeStyle = 'gray'
+  ctx.stroke();
   ctx.closePath();
 
   for(var id in objects){
     if( objects[id].type === 'player'){
-      if( id === socket.id )
-      { drawInfo(objects[id]) }
+      console.log(state);
+      switch(state){
+        case 'waiting':
+          if( id === socket.id && state === 'waiting')
+          { drawInfo(objects[id],objects['platform'].radius) }
+        break;
+        case 'showing':
+          var object = objects[id];
+          arrow(object.color,object.x + offsetX, object.y + offsetY, object.x + offsetX + object.dx, object.y + offsetY + object.dy,
+          Math.min((Math.sqrt(object.dx*object.dx+object.dy*object.dy)/object.max),1))
+        break;
+        case 'playing':
+        break;
+      }
+
       drawPlayer(objects[id])
     }
   }
+
+  // BROADCAST
+  var txt = objects['broadcast'].msg;
+  ctx.font = "bold 60px Arial";
+  ctx.fillStyle = "#efefef";
+  ctx.fillText(txt,canvas.width/2,canvas.height/10)
+  ctx.strokeText(txt,canvas.width/2, canvas.height/10);
+
 })
 
 // DRAW ARROW
