@@ -28,7 +28,7 @@ input[type=text] {
 #room-menu {
   display: none;
   width: 400px;
-  height: 300px; }
+  height: 320px; }
   #room-menu .flex-item {
     margin: 2px; }
   #room-menu .flex-container {
@@ -37,9 +37,19 @@ input[type=text] {
     padding: 0px; }
   #room-menu .half {
     background-color: #efefef;
-    width: 196px; }
+    color: gray;
+    width: 196px;
+    font-size: 1em;
+    text-transform: none; }
   #room-menu .full {
     width: 396px; }
+
+#room-number {
+  text-transform: none;
+  background-color: #efefef;
+  padding: 2px 10px 2px 10px;
+  margin-left: 5px;
+  color: gray; }
 
 .menu-container {
   position: absolute;
@@ -85,7 +95,7 @@ input[type=text] {
   box-sizing: border-box;
   flex: 1;
   margin: auto;
-  background: tomato;
+  background: gray;
   padding: 10px;
   text-transform: capitalize;
   color: white;

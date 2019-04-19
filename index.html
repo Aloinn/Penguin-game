@@ -7,26 +7,30 @@
   </head>
   <body>
     <canvas id="myCanvas"></canvas>
+    <!-- MAIN MENU -->
     <div id="main-menu" class="menu-container menu-large flex-container flex-vertical">
       <form autocomplete="off" method="post" action="">
         <input onfocus="if(this.value=='Enter your NAME here') this.value='';" class="flex-item"
-        type="text" onclick="clearfield(this)" id="name-input" value="Enter your NAME here" maxlength="10">
+        type="text" id="name-input" value="Enter your NAME here" maxlength="10">
       </form>
       <a href="#" class="flex-item"> Play </a>
-      <a href="#" class="flex-item" onclick="displaySection(menuRoom)"> Create room </a>
+      <a href="#" class="flex-item" onclick="createRoom(); displaySection(menuRoom)"> Create room </a>
       <a href="#" class="flex-item" onclick="displaySection(menuJoin)"> Join room </a>
     </div>
 
+    <!-- JOIN MENU -->
     <div id="join-menu" class="menu-container menu-medium flex-container flex-vertical">
       <form autocomplete="off" method="post" action="">
-        <input onfocus="if(this.value=='Enter ROOM CODE here') this.value='';" class="flex-item"
-        type="text" onclick="clearfield(this)" id="code-input" value="Enter ROOM CODE here">
+        <input onfocus="this.value='';" class="flex-item"
+        type="text" id="code-input" value="Enter ROOM CODE here">
       </form>
-      <a href="#" class="flex-item"> Join room </a>
+      <a href="#" class="flex-item" onclick="joinRoom()"> Join room </a>
       <a href="#" class="flex-item" onclick="displaySection(menuMain)"> Back </a>
     </div>
 
+    <!-- LOBBY MENU -->
     <div id="room-menu" class="menu-container menu-large flex-container flex-vertical">
+      <p class="flex-item full">Room number: <span id="room-number">_</span></p>
       <div class="flex-item flex-container flex-wrap">
         <p href="#" id="p1" class="flex-item half">_</p>
         <p href="#" id="p2" class="flex-item half">_</p>
@@ -37,7 +41,7 @@
         <p href="#" id="p7" class="flex-item half">_</p>
         <p href="#" id="p8" class="flex-item half">_</p>
       </div>
-      <a href="#" class="flex-item full" onclick="displaySection(menuMain)"> Back </a>
+      <a href="#" class="flex-item full" onclick="disconnectRoom(); displaySection(menuMain)"> Back </a>
 
     </div>
 

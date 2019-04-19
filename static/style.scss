@@ -36,13 +36,15 @@ a{
   }
   .flex-container{
     justify-content: space-between;
-
     margin: 0px;
     padding: 0px;
   }
-  .half{
+  .half{ // LIST OF NAMES OF PLAYERS
     background-color:#efefef;
+    color:gray;
     width:196px;
+    font-size: 1em;
+    text-transform: none;
     //margin-top:2px;
   }
   .full{
@@ -50,7 +52,14 @@ a{
   }
   display: none;
   width:400px;
-  height:300px;
+  height:320px;
+}
+#room-number{
+  text-transform: none;
+  background-color: #efefef;
+  padding: 2px 10px 2px 10px;
+  margin-left:5px;
+  color:gray;
 }
 // FLEX CONTAINERS AND MENU CONTAINERS
 .menu-container{
@@ -103,7 +112,7 @@ a{
   box-sizing: border-box;
   flex:1;
   margin:auto;
-  background: tomato;
+  background: gray;
   padding: 10px;
   text-transform: capitalize;
   color: white;

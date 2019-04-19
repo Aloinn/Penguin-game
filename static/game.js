@@ -14,7 +14,7 @@ function displaySection(display){
   menuMain.style.display = "none";
   menuJoin.style.display = "none";
   menuRoom.style.display = "none";
-  
+
   if(display)
   {display.style.display = "flex";}
 }
@@ -40,6 +40,46 @@ canvasetup();
 function clearfield(){
   this.value = "";
 }
-
+// CLEAR TEXTBOXES
+function getName(){
+  if(document.getElementById('name-input').value != 'Enter your NAME here')
+  { return document.getElementById('name-input').value }
+  else
+  { return('Player'); }
+}
 // ON CONNECT
-socket.emit('create room');
+function createRoom(){
+  socket.emit('create room', getName());
+}
+// ON JOIN
+function joinRoom(){
+  socket.emit('join room', document.getElementById('code-input').value, getName());
+  socket.on('join msg', function(response){
+    document.getElementById('code-input').value = response;
+    if(response === 'Room joined!'){
+      displaySection(menuRoom);
+    }
+  })
+}
+// ON DISCONNECT
+function disconnectRoom(){
+  socket.emit('leave room');
+}
+// UPDATES ROOM LIST
+socket.on('player change', function(room) {
+  // CLEAR PLAYER LIST
+  for(var i = 1; i < 9; i ++){
+    var txtbox = document.getElementById("p"+i.toString());
+    txtbox.innerHTML = '_'
+  }
+  // DECLARE PLAYER LIST USING PLAYER LIST
+  var i = 1;
+  for(var id in room.players){
+    console.log(room.players[id].name);
+    var txtbox = document.getElementById("p"+i.toString());
+    txtbox.innerHTML = room.players[id].name;
+    i += 1;
+  }
+  document.getElementById('room-number').innerHTML = room.rmnm;
+  console.log(room.players);
+});

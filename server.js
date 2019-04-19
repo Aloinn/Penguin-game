@@ -20,7 +20,9 @@ server.listen(5000, function() {
 
 ////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-
+setInterval(function(){
+  console.table(rooms);
+},1000);
 var connected = {};
 // SOCKET HANDLERS
 io.on('connection', function(socket) {
@@ -30,36 +32,72 @@ io.on('connection', function(socket) {
   };
 
   // WHEN PLAYER CREATES ROOM
-  socket.on('create room', function(){
+  socket.on('create room', function(name){
+    // SET CONNECTED PLAYER'S ROOM TO NEW ROOM OBJECT
     connected[socket.id].room = new room();
-    connected[socket.id].room.players[socket.id] = socket.id;
-    console.table(rooms);
-    console.table(connected);
+    // CREATE AN ENTRY IN THE ROOM FOR SAID PLAYER
+    connected[socket.id].room.players[socket.id] = new Object();
+    connected[socket.id].room.players[socket.id].id = socket.id;
+    connected[socket.id].room.players[socket.id].name = name;
+
+    // RMNM IS ID OF ROOM
+    var rmnm = connected[socket.id].room.rmnm;
+    socket.join(rmnm);
+
+    // UPDATES ALL PLAYERS INSIDE THE ROOM OF A PLAYER CHANGE
+    io.sockets.in(rmnm).emit('player change',connected[socket.id].room);
+  })
+
+  // WHEN A PLAYER LEAVES ROOM
+  socket.on('leave room',function(){
+    // DISCONNECT FROM ROOM
+    if(typeof connected[socket.id].room != 'undefined'){
+      // DELETE SOCKET ID FROM LIST OF PLAYERS IN ROOM
+      delete connected[socket.id].room.players[socket.id];
+      // TELLS ALL PLAYERS THAT YOU LEFT
+      io.sockets.in(connected[socket.id].room.rmnm).emit('player change',connected[socket.id].room);
+      // CHECK IF ROOM IS EMPTY
+      connected[socket.id].room.checkEmpty();
+    }
+    connected[socket.id].room = undefined;
   })
 
   // WHEN PLAYER JOINS ROOM ( takes id of room as parametr )
-  socket.on('join room', function(id){
+  socket.on('join room', function(rmnm, name){
+    console.log(name);
+    // EMPTY VARIABLE
+    var response = "";
     // IF ROOM EXISTS
-    if(typeof rooms[id] != undefined){
+    if(typeof rooms[rmnm] != 'undefined'){
       // IF ROOM IS NOT FULL
-      if(Object.keys(rooms[id].players).length != 10){
-        // PLAYER'S ROOM PROPERTY IS NOW THE ROOM OBJECT
-        connected[socket.id].room = rooms[id];
-        rooms[id].players[socket.id] = socket.id;
-        return('Room joined!');
+      if(Object.keys(rooms[rmnm].players).length != 8){
+        // SET CONNECTED PLAYER'S CONNECTED ROOM TO SPECIFIC ROOM
+        connected[socket.id].room = rooms[rmnm];
+        // ADDS ENTRY FOR SAID PLAYER
+        connected[socket.id].room.players[socket.id] = new Object();
+        connected[socket.id].room.players[socket.id].id = socket.id;
+        connected[socket.id].room.players[socket.id].name = name;
+        // JOINS
+        socket.join(rmnm);
+
+        response = 'Room joined!';
+
+        io.sockets.in(rmnm).emit('player change',connected[socket.id].room);
       } else {
-        return('Room full!');
+        response = 'Room full!';
       }
-    } else { return('Room does not exist!'); }
+    } else { response = 'Room does not exist!'; }
+    io.to(socket.id).emit('join msg', response);
   })
 
   // WHEN PLAYER DISCONNECT
   socket.on('disconnect',function(){
     // CHECK IS CONNETCED CLIENT HAS A ROOM
     if(typeof connected[socket.id].room != 'undefined'){
-      console.log('room!');
       // DELETE SOCKET ID FROM LIST OF PLAYERS IN ROOM
       delete connected[socket.id].room.players[socket.id];
+      // TELLS ALL PLAYERS THAT YOU LEFT
+      io.sockets.in(connected[socket.id].room.rmnm).emit('player change',connected[socket.id].room);
       // CHECK IF ROOM IS EMPTY
       connected[socket.id].room.checkEmpty();
     }
@@ -87,7 +125,7 @@ class room{
       var id = makeid();
       if(typeof rooms[id] === 'undefined'){
         this.rmnm = id;
-        rooms[id] = id;
+        rooms[id] = this;
         break;
       }
     }
