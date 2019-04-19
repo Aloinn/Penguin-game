@@ -24,6 +24,7 @@ setInterval(function(){
   console.table(rooms);
 },1000);
 var connected = {};
+
 // SOCKET HANDLERS
 io.on('connection', function(socket) {
   // WHEN PLAYER CONNECTS
@@ -92,15 +93,43 @@ io.on('connection', function(socket) {
   })
   // WHEN A PLAYER TOGGLES READY
   socket.on('toggle ready',function(){
-    console.log('ready!')
+    // START GAME FUNCTION
+    var room = connected[socket.id].room;
     // SETS THE PLAYER'S STATUS TO READY
-    connected[socket.id].room.players[socket.id].ready ?
-      connected[socket.id].room.players[socket.id].ready = false :
-      connected[socket.id].room.players[socket.id].ready = true;
+    room.players[socket.id].ready ?
+      room.players[socket.id].ready = false :
+      room.players[socket.id].ready = true;
     // UPDATES ALL PLAYERS
     io.sockets.in(connected[socket.id].room.rmnm).emit('player change',connected[socket.id].room);
-    // CHECK IF ALL PLAYERS ARE READY HERE
+
+    // CHECK IF ALL PLAYERS ARE READY
+    var numplayers = Object.keys(room.players).length;
+    for(var id in room.players){
+      if(room.players[id].ready === true)
+      {numplayers -=1;}
+    }
+    if(numplayers === 0){// IF ALL PLAYERS ARE READY
+      // START GAME IF ALL PLAYERS ARE READY
+      room.game = new game(room.rmnm, room.players);
+      room.state = states.playing;
+    }
   });
+  // GAME INPUT
+  socket.on('input',function(mouse){
+    var client = connected[socket.id];
+    // IF CLIENT IS IN A ROOM IN A GAME
+    if(client.room && client.room.game && client.room.game.state === states.waiting){
+      var player = connected[socket.id].room.game.objects[socket.id]
+      player.dx = -(player.x - mouse.x);
+      player.dy = -(player.y - mouse.y);
+      var angle = Math.atan2(player.dy, player.dx);
+      if(Math.sqrt(player.dy*player.dy + player.dx*player.dx) > player.max){
+        player.dx = Math.cos(angle)*player.max;
+        player.dy = Math.sin(angle)*player.max;
+      }
+
+    }
+  })
   // WHEN PLAYER DISCONNECT
   socket.on('disconnect',function(){
     // CHECK IS CONNETCED CLIENT HAS A ROOM
@@ -120,6 +149,12 @@ io.on('connection', function(socket) {
 // LIST OF ROOMS
 var rooms = {};
 // ROOMS OBJECT
+var states = {
+  menu: 0,
+  playing: 1,
+  waiting: 2
+}
+Object.freeze(states);
 class room{
   // CREATING THE ROOM
   constructor(){
@@ -143,7 +178,7 @@ class room{
 
     this.players = {};
     this.type = undefined; // SOLO, PRIVATE, PUBLIC
-    this.state = undefined; // MENU, SETUP, PLAYING, WAITING
+    this.state = states.menu; // MENU, SETUP, PLAYING, WAITING
 
     return this;
   }
@@ -153,4 +188,115 @@ class room{
       delete rooms[this.rmnm];
     }
   }
+}
+
+// GAME OBJECT
+class game{
+
+  // ROOM PROPERTIES
+  constructor(rmnm, players){
+    this.xRadius = 100;
+    this.yRadius = 100;
+    this.time = 10;
+
+    var n = setInterval(()=>{this.gameStep(n)},1000/60);
+
+    this.rmnm = rmnm;
+    this.state = states.waiting; // WAITING FOR INPUT
+    this.objects = {};
+
+    var num = 1;
+    for(var id in players){
+      this.objects[id] = new player( 50 * num, 50 , players[id].name);
+      num += 1;
+    }
+
+    io.sockets.in(rmnm).emit('game state', this.objects);
+  }
+
+  // EVERY STEP IN GAME
+  gameStep(n){
+    // IF ROOM DOESNT EXIST, STOP INTERVAL
+    if(typeof rooms[this.rmnm] != 'undefined'){
+      switch(this.state){
+        case states.waiting:
+        // GAME IS WAITNG FOR USER INPUTS
+          break;
+        case states.playing:
+        // GAME DOES PHYSICS AND COLLISIONS
+          break;
+      }
+      io.sockets.in(this.rmnm).emit('game state', this.objects);
+    } else {clearInterval(n);}
+  }
+
+  spawnPlayers(){
+
+  }
+
+  stepPlayers(){
+
+  }
+}
+
+// PLAYER OBJECT
+class player{
+  constructor(x, y, name){
+    // PROPERTIES
+    this.type = 'player';
+    this.x = x;
+    this.y = y;
+    this.dx = 0;
+    this.dy = 0;
+    this.max = 500;
+    this.name = name;
+    this.color = Rcolor();
+    // COLLIDED FLAG
+    this.collide = false;
+  }
+
+  move(){
+    // MOVE BASED ON SPEED
+    this.x += dx;
+    this.y += dy;
+    // DECELERATE
+    this.dx *= 0.9;
+    this.dy *= 0.9;
+  }
+
+  checkCollide(other){
+    // DIFFERENCES IN X AND Y COORDINATES
+    var xx = (this.x + this.dx) - (other.x + other.dx)
+    var yy = (this.y + this.dy) - (other.y + other.dy)
+    // TOTAL DIFFERENCE IN DISTANCE
+    var dif = Math.sqrt(xx*xx + yy*yy);
+    if(dif < 40){ // 20 is radius of one ball
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bounce(other){
+    var xx = this.dx;
+    var yy = this.dy;
+    // OBJECT'S SPEED IS NOW THE OTHER'S
+    this.dx = other.dx;
+    this.dy = other.dy;
+    this.collide = true;
+    // OTHER'S SPEED IS NOW OBJECT'S
+    other.dx = xx;
+    other.dy = yy;
+    this.collide = true;
+  }
+}
+
+// RANDOM COLOR
+function Rcolor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
 }
