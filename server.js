@@ -20,9 +20,6 @@ server.listen(5000, function() {
 
 ////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-setInterval(function(){
-  console.table(rooms);
-},1000);
 var connected = {};
 
 // SOCKET HANDLERS
@@ -278,13 +275,48 @@ class game{
             this.time = 0;
             break;
           }
+
           // PHYSICS LOGIC
-          for(var id in this.objects){
+          for(var id in this.objects){ // RESETS COLLISION TAG OF ALL PLAYERS
+            if(this.objects[id].type === 'player'){
+              this.objects[id].collide = false;
+            }
+          }
+
+          for(var id in this.objects){ // RUN COLLISIONS
             if(this.objects[id].type === 'player'){
               var player = this.objects[id];
-              player.move();
-
+              for(var id2 in this.objects){ // ITERATES THROUGH ALL OTHER OBJECTS
+                if(id != id2){
+                  var other = this.objects[id2];
+                  if(player.checkCollide(other)){
+                    player.bounce(other);
+                  }
+                }
+              }
             }
+          }
+
+          for(var id in this.objects){ // MOVE PLAYER
+            if(this.objects[id].type === 'player'){
+              this.objects[id].move();
+            }
+          }
+
+          // CHECK IF ANYONE STILL MOVING
+          var movement = false; // FLAG FOR MOVEMENT
+          for(var id in this.objects){
+            var player = this.objects[id];
+            if( player.type === 'player'){
+              if(player.dx != 0 || player.dy != 0){
+                movement = true;
+              }
+            }
+          }
+
+          if(movement === false){
+            this.state = states.waiting;
+            this.time = 10;
           }
           break;
       }
@@ -324,15 +356,20 @@ class player{
     // DECELERATE
     this.dx *= 0.985;
     this.dy *= 0.985;
+    // STOP MOVEMENT IF SLOW
+    if(Math.sqrt(this.dx*this.dx + this.dy*this.dy)< 0.5){
+      this.dx = 0;
+      this.dy = 0;
+    }
   }
 
   checkCollide(other){
     // DIFFERENCES IN X AND Y COORDINATES
-    var xx = (this.x + this.dx) - (other.x + other.dx)
-    var yy = (this.y + this.dy) - (other.y + other.dy)
+    var xx = (this.x + this.dx/(4*1000/60)) - (other.x + other.dx/(4*1000/60))
+    var yy = (this.y + this.dy/(4*1000/60)) - (other.y + other.dy/(4*1000/60))
     // TOTAL DIFFERENCE IN DISTANCE
     var dif = Math.sqrt(xx*xx + yy*yy);
-    if(dif < 40){ // 20 is radius of one ball
+    if(dif < 30){ // 20 is radius of one ball
       return true;
     } else {
       return false;

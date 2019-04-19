@@ -138,7 +138,7 @@ function drawPlayer(object){
     ctx.fillStyle = 'black';
     ctx.font = "16px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(object.name, (object.x + offsetX), (object.y + offsetY)+ (40));
+    ctx.fillText(object.name, (object.x + offsetX), (object.y + offsetY)+ (30));
   }
 }
 // DRAW INFO IF OBJECT IS PLAYER'S
@@ -168,7 +168,7 @@ socket.on('game state',function(objects, state){
   ctx.strokeStyle = 'gray'
   ctx.stroke();
   ctx.closePath();
-
+  // DRAW ARROWS
   for(var id in objects){
     if( objects[id].type === 'player'){
       console.log(state);
@@ -185,9 +185,11 @@ socket.on('game state',function(objects, state){
         case 'playing':
         break;
       }
-
-      drawPlayer(objects[id])
     }
+  }
+  // DRAW PLAYERS ON TOP OF ARROWS
+  for(var id in objects){
+    drawPlayer(objects[id])
   }
 
   // BROADCAST
