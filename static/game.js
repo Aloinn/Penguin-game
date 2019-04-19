@@ -61,6 +61,10 @@ function joinRoom(){
     }
   })
 }
+// ON READY
+function toggleReady(){
+  socket.emit('toggle ready');
+}
 // ON DISCONNECT
 function disconnectRoom(){
   socket.emit('leave room');
@@ -70,6 +74,7 @@ socket.on('player change', function(room) {
   // CLEAR PLAYER LIST
   for(var i = 1; i < 9; i ++){
     var txtbox = document.getElementById("p"+i.toString());
+    txtbox.style.backgroundImage = "none";
     txtbox.innerHTML = '_'
   }
   // DECLARE PLAYER LIST USING PLAYER LIST
@@ -78,6 +83,7 @@ socket.on('player change', function(room) {
     console.log(room.players[id].name);
     var txtbox = document.getElementById("p"+i.toString());
     txtbox.innerHTML = room.players[id].name;
+    room.players[id].ready ? txtbox.style.backgroundImage = "url('/static/checkmark.png')" : txtbox.style.backgroundImage = "none";
     i += 1;
   }
   document.getElementById('room-number').innerHTML = room.rmnm;

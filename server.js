@@ -39,7 +39,7 @@ io.on('connection', function(socket) {
     connected[socket.id].room.players[socket.id] = new Object();
     connected[socket.id].room.players[socket.id].id = socket.id;
     connected[socket.id].room.players[socket.id].name = name;
-
+    connected[socket.id].room.players[socket.id].ready= false;
     // RMNM IS ID OF ROOM
     var rmnm = connected[socket.id].room.rmnm;
     socket.join(rmnm);
@@ -77,6 +77,7 @@ io.on('connection', function(socket) {
         connected[socket.id].room.players[socket.id] = new Object();
         connected[socket.id].room.players[socket.id].id = socket.id;
         connected[socket.id].room.players[socket.id].name = name;
+        connected[socket.id].room.players[socket.id].ready= false;
         // JOINS
         socket.join(rmnm);
 
@@ -89,7 +90,17 @@ io.on('connection', function(socket) {
     } else { response = 'Room does not exist!'; }
     io.to(socket.id).emit('join msg', response);
   })
-
+  // WHEN A PLAYER TOGGLES READY
+  socket.on('toggle ready',function(){
+    console.log('ready!')
+    // SETS THE PLAYER'S STATUS TO READY
+    connected[socket.id].room.players[socket.id].ready ?
+      connected[socket.id].room.players[socket.id].ready = false :
+      connected[socket.id].room.players[socket.id].ready = true;
+    // UPDATES ALL PLAYERS
+    io.sockets.in(connected[socket.id].room.rmnm).emit('player change',connected[socket.id].room);
+    // CHECK IF ALL PLAYERS ARE READY HERE
+  });
   // WHEN PLAYER DISCONNECT
   socket.on('disconnect',function(){
     // CHECK IS CONNETCED CLIENT HAS A ROOM

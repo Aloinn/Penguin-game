@@ -28,19 +28,25 @@ input[type=text] {
 #room-menu {
   display: none;
   width: 400px;
-  height: 320px; }
+  height: 370px; }
   #room-menu .flex-item {
     margin: 2px; }
   #room-menu .flex-container {
     justify-content: space-between;
     margin: 0px;
+    margin-top: 5px;
+    margin-bottom: 5px;
     padding: 0px; }
   #room-menu .half {
     background-color: #efefef;
     color: gray;
     width: 196px;
     font-size: 1em;
-    text-transform: none; }
+    text-transform: none;
+    background-image: url("/static/checkmark.png");
+    background-repeat: no-repeat;
+    background-position: right;
+    background-size: 40px 40px; }
   #room-menu .full {
     width: 396px; }
 
