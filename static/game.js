@@ -24,10 +24,14 @@ var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 var ratioX = 0;
 var ratioY = 0;
+var offsetX = 0;
+var offsetY = 0;
 var ratio = 0;
 function canvasetup(){
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
+  offsetX = canvas.width/2;
+  offsetY = canvas.height/2;
   ratioX = canvas.width/800;
   ratioY = canvas.height/600;
   ratio  = Math.min(ratioX,ratioY);
@@ -111,8 +115,8 @@ function doMouseUp(event){
 
 function doMouseMove(event){
   var rect = canvas.getBoundingClientRect();
-  mouse.x = Math.round((event.clientX - rect.left) / (rect.right - rect.left) * canvas.width);
-  mouse.y = Math.round((event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height);
+  mouse.x = -offsetX + Math.round((event.clientX - rect.left) / (rect.right - rect.left) * canvas.width);
+  mouse.y = -offsetY + Math.round((event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height);
   console.table(mouse);
 }
 
@@ -121,7 +125,7 @@ function drawPlayer(object){
   // DRAW BODY
   if(object.type === 'player'){
     ctx.beginPath();
-    ctx.arc(object.x, object.y, 20, 0, 2 * Math.PI, false);
+    ctx.arc(object.x + offsetX, object.y + offsetY, 15, 0, 2 * Math.PI, false);
     ctx.fillStyle = object.color;
     ctx.fill();
     ctx.closePath();
@@ -134,16 +138,17 @@ function drawPlayer(object){
     ctx.fillStyle = 'black';
     ctx.font = "16px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(object.name, (object.x), (object.y)+ (40));
+    ctx.fillText(object.name, (object.x + offsetX), (object.y + offsetY)+ (40));
   }
 }
 // DRAW INFO IF OBJECT IS PLAYER'S
 function drawInfo(object){
   // DRAW TRAJECTORY
-  arrow('lightgray',object.x, object.y, mouse.x, mouse.y,
-      Math.min((Math.sqrt(Math.pow(object.x-mouse.x,2)+Math.pow(object.y-mouse.y,2))/object.max),2))
+  arrow('lightgray',object.x + offsetX, object.y + offsetY, offsetX+ mouse.x, offsetY+mouse.y,
+      Math.min((Math.sqrt(Math.pow(object.x - mouse.x,2)+Math.pow(object.y - mouse.y,2))/object.max),2))
+
   if(object.dx != 0 && object.dy != 0){
-    arrow(object.color,object.x, object.y, object.x + object.dx, object.y + object.dy,
+    arrow(object.color,object.x + offsetX, object.y + offsetY, object.x + offsetX + object.dx, object.y + offsetY + object.dy,
       Math.min((Math.sqrt(object.dx*object.dx+object.dy*object.dy)/object.max),1))
   }
 }
@@ -151,10 +156,19 @@ function drawInfo(object){
 socket.on('game state',function(objects){
   displaySection();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // DRAW PLATFORM
+  ctx.beginPath();
+  ctx.arc(offsetX, offsetY, objects['platform'].radius , 0, 2 * Math.PI, false);
+  ctx.fillStyle = '#efefef'
+  ctx.fill();
+  ctx.closePath();
+
   for(var id in objects){
-    if( id === socket.id )
-    { drawInfo(objects[id]) }
-    drawPlayer(objects[id])
+    if( objects[id].type === 'player'){
+      if( id === socket.id )
+      { drawInfo(objects[id]) }
+      drawPlayer(objects[id])
+    }
   }
 })
 
@@ -169,7 +183,7 @@ function arrow(color, fromx, fromy, tox, toy, wwidth){
   var dy = toy-fromy;
   var dx = tox-fromx;
 
-  var width = 10*(1+(1.4*wwidth));
+  var width = 10*(1+(1.1*wwidth));
   var headlen = width;   // length of head in pixels
   // DRAW LINE
   ctx.beginPath();

@@ -195,8 +195,7 @@ class game{
 
   // ROOM PROPERTIES
   constructor(rmnm, players){
-    this.xRadius = 100;
-    this.yRadius = 100;
+    this.radius = 250;
     this.time = 10;
 
     var n = setInterval(()=>{this.gameStep(n)},1000/60);
@@ -204,6 +203,13 @@ class game{
     this.rmnm = rmnm;
     this.state = states.waiting; // WAITING FOR INPUT
     this.objects = {};
+    this.objects['platform'] = new Object();
+    this.objects['platform'].type = 'game';
+    this.objects['platform'].radius = this.radius;
+
+    this.objects['broadcast'] = new Object();
+    this.objects['broadcast'].type = 'game';
+    this.objects['broadcast'].msg = '';
 
     var num = 1;
     for(var id in players){
@@ -248,7 +254,7 @@ class player{
     this.y = y;
     this.dx = 0;
     this.dy = 0;
-    this.max = 500;
+    this.max = 400;
     this.name = name;
     this.color = Rcolor();
     // COLLIDED FLAG
