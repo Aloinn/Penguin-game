@@ -117,7 +117,6 @@ function doMouseMove(event){
   var rect = canvas.getBoundingClientRect();
   mouse.x = -offsetX + Math.round((event.clientX - rect.left) / (rect.right - rect.left) * canvas.width);
   mouse.y = -offsetY + Math.round((event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height);
-  console.table(mouse);
 }
 
 // DRAWING
@@ -125,7 +124,7 @@ function drawPlayer(object){
   // DRAW BODY
   if(object.type === 'player'){
     ctx.beginPath();
-    ctx.arc(object.x + offsetX, object.y + offsetY, 15, 0, 2 * Math.PI, false);
+    ctx.arc(object.x + offsetX, object.y + offsetY, object.radius, 0, 2 * Math.PI, false);
     ctx.fillStyle = object.color;
     ctx.fill();
     ctx.closePath();
@@ -141,6 +140,7 @@ function drawPlayer(object){
     ctx.fillText(object.name, (object.x + offsetX), (object.y + offsetY)+ (30));
   }
 }
+
 // DRAW INFO IF OBJECT IS PLAYER'S
 function drawInfo(object, radius){
   // DRAW TRAJECTORY
@@ -171,7 +171,6 @@ socket.on('game state',function(objects, state){
   // DRAW ARROWS
   for(var id in objects){
     if( objects[id].type === 'player'){
-      console.log(state);
       switch(state){
         case 'waiting':
           if( id === socket.id && state === 'waiting')
@@ -181,8 +180,6 @@ socket.on('game state',function(objects, state){
           var object = objects[id];
           arrow(object.color,object.x + offsetX, object.y + offsetY, object.x + offsetX + object.dx, object.y + offsetY + object.dy,
           Math.min((Math.sqrt(object.dx*object.dx+object.dy*object.dy)/object.max),1))
-        break;
-        case 'playing':
         break;
       }
     }
@@ -196,10 +193,23 @@ socket.on('game state',function(objects, state){
   var txt = objects['broadcast'].msg;
   ctx.font = "bold 60px Arial";
   ctx.fillStyle = "#efefef";
+  ctx.strokeStyle = 'black'
   ctx.fillText(txt,canvas.width/2,canvas.height/10)
   ctx.strokeText(txt,canvas.width/2, canvas.height/10);
 
+  if(state === 'dead'){
+    gameEnded();
+  }
 })
+
+socket.on('game done',function(){
+  gameEnded();
+})
+
+function gameEnded(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  displaySection(menuRoom);
+}
 
 // DRAW ARROW
 function arrow(color, fromx, fromy, tox, toy, wwidth){

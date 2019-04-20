@@ -109,6 +109,10 @@ io.on('connection', function(socket) {
       // START GAME IF ALL PLAYERS ARE READY
       room.game = new game(room.rmnm, room.players);
       room.state = states.playing;
+      for(var id in room.players){
+        room.players[id].ready = false;
+      }
+      io.sockets.in(connected[socket.id].room.rmnm).emit('player change',connected[socket.id].room);
     }
   });
   // GAME INPUT
@@ -116,15 +120,16 @@ io.on('connection', function(socket) {
     var client = connected[socket.id];
     // IF CLIENT IS IN A ROOM IN A GAME
     if(client.room && client.room.game && client.room.game.state === states.waiting){
-      var player = connected[socket.id].room.game.objects[socket.id]
-      player.dx = -(player.x - mouse.x);
-      player.dy = -(player.y - mouse.y);
-      var angle = Math.atan2(player.dy, player.dx);
-      if(Math.sqrt(player.dy*player.dy + player.dx*player.dx) > player.max){
-        player.dx = Math.cos(angle)*player.max;
-        player.dy = Math.sin(angle)*player.max;
+      if(client.room.game.objects[socket.id]){
+        var player = connected[socket.id].room.game.objects[socket.id]
+        player.dx = -(player.x - mouse.x);
+        player.dy = -(player.y - mouse.y);
+        var angle = Math.atan2(player.dy, player.dx);
+        if(Math.sqrt(player.dy*player.dy + player.dx*player.dx) > player.max){
+          player.dx = Math.cos(angle)*player.max;
+          player.dy = Math.sin(angle)*player.max;
+        }
       }
-
     }
   })
   // WHEN PLAYER DISCONNECT
@@ -151,6 +156,8 @@ var states = {
   showing: 'showing',
   playing: 'playing',
   waiting: 'waiting',
+  end: 'end',
+  dead: 'dead',
 }
 Object.freeze(states);
 
@@ -212,11 +219,36 @@ class game{
 
     var num = 1;
     for(var id in players){
-      this.objects[id] = new player( 50 * num, 50 , players[id].name);
+      this.objects[id] = new player( 50 * num, 50 , players[id].name, this.rmnm, id);
       num += 1;
     }
 
     io.sockets.in(rmnm).emit('game state', this.objects, this.state);
+  }
+  // CHECK IF GAME IS DONE
+  checkEnd(){
+    // ONE PLAYER LEFT || 0 PLAYERS LEFT
+    if(Object.keys(this.objects).length <= 3){
+      this.state = states.end;
+      this.objects['broadcast'].msg = this.msgEnd();
+      this.time = 4;
+    }
+  }
+  // END GAME MESSAGE
+  msgEnd(){
+    if(Object.keys(this.objects).length == 3){
+      var winnerid = 0;
+      for(var id in this.objects){
+        if(id != 'broadcast' && id != 'platform'){
+          winnerid = id
+        }
+      }
+      return (this.objects[winnerid].name+' has won!');
+    }
+    // TIE
+    if(Object.keys(this.objects).length == 2){
+      return 'It\'s a tie!';
+    }
   }
 
   // EVERY STEP IN GAME
@@ -224,38 +256,32 @@ class game{
     // IF ROOM DOESNT EXIST, STOP INTERVAL
     if(typeof rooms[this.rmnm] != 'undefined'){
       switch(this.state){
+
+        /////// WAITING PHRASE
         case states.waiting:
           this.time -= (1/60);
           this.objects['broadcast'].msg = Math.floor(this.time);
           if(Math.floor(this.time) === -1){
             this.state = states.showing;
-            this.objects['broadcast'].msg = 'waiting';
+            this.objects['broadcast'].msg = '';
           }
           break;
+
+        /////// SHOWING PHRASE PHRASE
         case states.showing:
           this.time -= (2/60);
           // WAITING . . . EFFECT
           switch(Math.floor(this.time)){
-            case -1:
-            this.objects['broadcast'].msg = 'waiting';
-            break;
-            case -2:
-            this.objects['broadcast'].msg = 'waiting.';
-            break;
-            case -3:
-            this.objects['broadcast'].msg = 'waiting..';
-            break;
             case -4:
-            this.objects['broadcast'].msg = 'waiting...';
-            break;
-            case -5:
             this.time = 0;
             this.state = states.playing;
+
             break;
           }
 
-        // GAME DOES PHYSICS AND COLLISIONS
           break;
+
+        /////// PLAYING PHRASE ( PHYSICS AND COLLISIONS )
         case states.playing:
           this.time -= (3/60);
           switch(Math.floor(this.time)){
@@ -280,6 +306,10 @@ class game{
           for(var id in this.objects){ // RESETS COLLISION TAG OF ALL PLAYERS
             if(this.objects[id].type === 'player'){
               this.objects[id].collide = false;
+              // IF PLAYER IS OUTSIDE OF BOUNDS,
+              if(this.objects[id].dead === true){
+                this.objects[id].shrink();
+              }
             }
           }
 
@@ -300,6 +330,7 @@ class game{
           for(var id in this.objects){ // MOVE PLAYER
             if(this.objects[id].type === 'player'){
               this.objects[id].move();
+              this.objects[id].checkOnScreen(this.objects['platform'].radius);
             }
           }
 
@@ -307,37 +338,68 @@ class game{
           var movement = false; // FLAG FOR MOVEMENT
           for(var id in this.objects){
             var player = this.objects[id];
-            if( player.type === 'player'){
-              if(player.dx != 0 || player.dy != 0){
+            if(player.type === 'player'){
+              if(player.dx != 0 || player.dy != 0 || player.dead === true){
                 movement = true;
               }
             }
           }
 
           if(movement === false){
-            this.state = states.waiting;
-            this.time = 10;
+            this.time = 0;
+            this.state = states.shrinking;
+            this.objects['broadcast'].msg = '';
+            this.checkEnd();
           }
           break;
+        /////// SHRINK ISLAND
+        case states.shrinking:
+          this.time -= (2/60);
+          switch(Math.floor(this.time)){
+            case -5:
+            this.state = states.waiting;
+            this.time = 10;
+            this.checkEnd();
+            break;
+          }
+          this.objects['platform'].radius > 120 ?
+            this.objects['platform'].radius *= 0.998 :
+            this.objects['platform'].radius *= 0.996;
+
+          console.log(this.objects['platform'].radius);
+          break;
+
+        // END GAME SCENERIO
+        case states.end:
+          this.time -= (1/60);
+          if(Math.floor(this.time)<=0){
+            this.state = states.dead;
+          }
+          break;
+          // DEAD GAME
+        case states.dead:
+          io.sockets.in(this.rmnm).emit('game done');
+          clearInterval(n);
+          rooms[this.rmnm].states = states.waiting;
+          delete rooms[this.rmnm].game;
+          break;
       }
-      io.sockets.in(this.rmnm).emit('game state', this.objects, this.state);
+      io.sockets.in(this.rmnm).emit('game state', this.objects, this.state)
     } else {clearInterval(n);}
   }
 
   spawnPlayers(){
 
   }
-
-  stepPlayers(){
-
-  }
 }
 
 // PLAYER OBJECT
 class player{
-  constructor(x, y, name){
+  constructor(x, y, name, rmnm, id){
     // PROPERTIES
     this.type = 'player';
+    this.rmnm = rmnm;
+    this.id = id;
     this.x = x;
     this.y = y;
     this.dx = 0;
@@ -345,6 +407,8 @@ class player{
     this.max = 400;
     this.name = name;
     this.color = Rcolor();
+    this.radius = 15;
+    this.dead = false;
     // COLLIDED FLAG
     this.collide = false;
   }
@@ -363,16 +427,34 @@ class player{
     }
   }
 
+  shrink(){
+    var shrink = 2/3
+    this.radius -= shrink
+    if(this.radius - shrink < 0){
+      this.destroy()
+    }
+  }
+
   checkCollide(other){
     // DIFFERENCES IN X AND Y COORDINATES
     var xx = (this.x + this.dx/(4*1000/60)) - (other.x + other.dx/(4*1000/60))
     var yy = (this.y + this.dy/(4*1000/60)) - (other.y + other.dy/(4*1000/60))
     // TOTAL DIFFERENCE IN DISTANCE
     var dif = Math.sqrt(xx*xx + yy*yy);
-    if(dif < 30){ // 20 is radius of one ball
+    if(dif < this.radius + other.radius){ // 20 is radius of one ball
       return true;
     } else {
       return false;
+    }
+  }
+
+  checkOnScreen(radius){
+    var xx = (this.x + this.dx/(4*1000/60))
+    var yy = (this.y + this.dy/(4*1000/60))
+    var dif = Math.sqrt(xx*xx + yy*yy)
+    // IF PLAYER'S CENTER POINT OS OUTSIDE OF ICEBERG
+    if( dif > radius + 15){
+      this.dead = true;
     }
   }
 
@@ -387,6 +469,10 @@ class player{
     other.dx = xx;
     other.dy = yy;
     this.collide = true;
+  }
+
+  destroy(){
+    delete rooms[this.rmnm].game.objects[this.id];
   }
 }
 
