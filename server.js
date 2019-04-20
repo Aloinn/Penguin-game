@@ -62,7 +62,6 @@ io.on('connection', function(socket) {
 
   // WHEN PLAYER JOINS ROOM ( takes id of room as parametr )
   socket.on('join room', function(rmnm, name){
-    console.log(name);
     // EMPTY VARIABLE
     var response = "";
     // IF ROOM EXISTS
@@ -203,6 +202,7 @@ class game{
   constructor(rmnm, players){
     this.radius = 250;
     this.time = 10;
+    this.numplayers = Object.keys(players).length;
 
     var n = setInterval(()=>{this.gameStep(n)},1000/60);
 
@@ -217,11 +217,10 @@ class game{
     this.objects['broadcast'].type = 'game';
     this.objects['broadcast'].msg = '';
 
-    var num = 1;
     for(var id in players){
-      this.objects[id] = new player( 50 * num, 50 , players[id].name, this.rmnm, id);
-      num += 1;
+      this.objects[id] = new player(0,0, players[id].name, this.rmnm, id);
     }
+    this.spawnPlayers();
 
     io.sockets.in(rmnm).emit('game state', this.objects, this.state);
   }
@@ -354,19 +353,44 @@ class game{
           break;
         /////// SHRINK ISLAND
         case states.shrinking:
+
           this.time -= (2/60);
+          if(Math.floor(this.time<-5)){
+            // CHECK IF ANYONE STILL MOVING
+            var movement = false; // FLAG FOR MOVEMENT
+            for(var id in this.objects){
+              var player = this.objects[id];
+              if(player.type === 'player'){
+                if(player.dx != 0 || player.dy != 0 || player.dead === true){
+                  movement = true;
+                }
+              }
+            }
+
+            if(movement === false){
+              this.state = states.waiting;
+              this.time = 10;
+              this.checkEnd();
+              break;
+            }
+          }
           switch(Math.floor(this.time)){
-            case -5:
-            this.state = states.waiting;
-            this.time = 10;
-            this.checkEnd();
-            break;
+
           }
           this.objects['platform'].radius > 120 ?
             this.objects['platform'].radius *= 0.998 :
             this.objects['platform'].radius *= 0.996;
 
-          console.log(this.objects['platform'].radius);
+          for(var id in this.objects){ // ON SCREEN CHECK FOR EACH PLAYER
+            if(this.objects[id].type === 'player'){
+              this.objects[id].checkOnScreen(this.objects['platform'].radius);
+              // SHRINKS IF DEAD
+              if(this.objects[id].dead === true){
+                this.objects[id].shrink();
+              }
+            }
+          }
+
           break;
 
         // END GAME SCENERIO
@@ -389,7 +413,16 @@ class game{
   }
 
   spawnPlayers(){
-
+    var n = 0;
+    for(var id in this.objects){
+      var object = this.objects[id];
+      if(object.type === 'player'){
+        var angle = (2*Math.PI*n/this.numplayers)
+        object.x = this.radius*0.8*Math.sin(angle);
+        object.y = this.radius*0.8*Math.cos(angle);
+        n+=1;
+      }
+    }
   }
 }
 
@@ -449,11 +482,13 @@ class player{
   }
 
   checkOnScreen(radius){
+
     var xx = (this.x + this.dx/(4*1000/60))
     var yy = (this.y + this.dy/(4*1000/60))
     var dif = Math.sqrt(xx*xx + yy*yy)
+
     // IF PLAYER'S CENTER POINT OS OUTSIDE OF ICEBERG
-    if( dif > radius + 15){
+    if( dif > radius){
       this.dead = true;
     }
   }
