@@ -159,7 +159,11 @@ var states = {
   dead: 'dead',
 }
 Object.freeze(states);
+// SERVER OBJECT
+class server{
 
+}
+// ROOM OBJECT
 class room{
   // CREATING THE ROOM
   constructor(){
@@ -328,7 +332,8 @@ class game{
 
           for(var id in this.objects){ // MOVE PLAYER
             if(this.objects[id].type === 'player'){
-              this.objects[id].collide = false;
+              for (var cols in this.objects[id].collided)
+                {delete this.objects[id].collided[cols]};
               this.objects[id].move();
               this.objects[id].checkOnScreen(this.objects['platform'].radius);
             }
@@ -444,6 +449,7 @@ class player{
     this.radius = 15;
     this.dead = false;
     // COLLIDED FLAG
+    this.collided = {};
     this.collide = false;
   }
 
@@ -470,14 +476,18 @@ class player{
   }
 
   checkCollide(other){
-    if(this.collided === true || other.collided === true)
+    if(this.collided.hasOwnProperty(other.id))
     {return false;}
+
     // DIFFERENCES IN X AND Y COORDINATES
     var xx = (this.x + this.dx/(4*1000/60)) - (other.x + other.dx/(4*1000/60))
     var yy = (this.y + this.dy/(4*1000/60)) - (other.y + other.dy/(4*1000/60))
     // TOTAL DIFFERENCE IN DISTANCE
     var dif = Math.sqrt(xx*xx + yy*yy);
     if(dif < this.radius + other.radius){ // 20 is radius of one ball
+      // ADD OTHER'S ID INTO COLLIDED LIST
+      this.collided[other.id] = new Object();
+      other.collided[this.id] = new Object();
       return true;
     } else {
       return false;
