@@ -6,14 +6,8 @@ var socketIO = require('socket.io');
 var app = express();
 var server = http.Server(app);
 var io = socketIO(server);
-// SETTING PORT FOR HEROKU
-let port = process.env.PORT;
-if (port == null || port == "") {
-  port = 5000;
-}
-app.listen(port);
-// DONE
-app.set('port', port);
+var pport = process.env.PORT || 3000;
+app.set('port', pport);
 app.use('/static', express.static(__dirname + '/static'));
 // Routing
 app.get('/', function(request, response) {
@@ -21,7 +15,7 @@ app.get('/', function(request, response) {
 });
 
 // STARTS THE SERVER
-server.listen(port, function() {
+server.listen(pport, function() {
   console.log('Starting server on port 5000');
 });
 
