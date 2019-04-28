@@ -6,7 +6,14 @@ var socketIO = require('socket.io');
 var app = express();
 var server = http.Server(app);
 var io = socketIO(server);
-app.set('port', 5000);
+// SETTING PORT FOR HEROKU
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 5000;
+}
+app.listen(port);
+// DONE
+app.set('port', port);
 app.use('/static', express.static(__dirname + '/static'));
 // Routing
 app.get('/', function(request, response) {
@@ -14,7 +21,7 @@ app.get('/', function(request, response) {
 });
 
 // STARTS THE SERVER
-server.listen(5000, function() {
+server.listen(port, function() {
   console.log('Starting server on port 5000');
 });
 
@@ -33,6 +40,7 @@ io.on('connection', function(socket) {
   socket.on('create room', function(name){
     // SET CONNECTED PLAYER'S ROOM TO NEW ROOM OBJECT
     connected[socket.id].room = new room();
+
     // CREATE AN ENTRY IN THE ROOM FOR SAID PLAYER
     connected[socket.id].room.players[socket.id] = new Object();
     connected[socket.id].room.players[socket.id].id = socket.id;
@@ -159,10 +167,7 @@ var states = {
   dead: 'dead',
 }
 Object.freeze(states);
-// SERVER OBJECT
-class server{
 
-}
 // ROOM OBJECT
 class room{
   // CREATING THE ROOM
