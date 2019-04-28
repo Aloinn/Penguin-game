@@ -328,6 +328,7 @@ class game{
 
           for(var id in this.objects){ // MOVE PLAYER
             if(this.objects[id].type === 'player'){
+              this.objects[id].collide = false;
               this.objects[id].move();
               this.objects[id].checkOnScreen(this.objects['platform'].radius);
             }
@@ -378,7 +379,7 @@ class game{
 
           }
           this.objects['platform'].radius > 120 ?
-            this.objects['platform'].radius *= 0.998 :
+            this.objects['platform'].radius *= 0.999 :
             this.objects['platform'].radius *= 0.996;
 
           for(var id in this.objects){ // ON SCREEN CHECK FOR EACH PLAYER
@@ -469,6 +470,8 @@ class player{
   }
 
   checkCollide(other){
+    if(this.collided === true || other.collided === true)
+    {return false;}
     // DIFFERENCES IN X AND Y COORDINATES
     var xx = (this.x + this.dx/(4*1000/60)) - (other.x + other.dx/(4*1000/60))
     var yy = (this.y + this.dy/(4*1000/60)) - (other.y + other.dy/(4*1000/60))
@@ -493,7 +496,7 @@ class player{
     }
   }
 
-  bounce(other){
+  bounceOld(other){
     var xx = this.dx;
     var yy = this.dy;
     // OBJECT'S SPEED IS NOW THE OTHER'S
@@ -505,7 +508,28 @@ class player{
     other.dy = yy;
     this.collide = true;
   }
+  bounce(other){
+    var angle1 = Math.atan2(other.y - this.y , other.x - this.x );
+    let vx1 = this.dx * Math.cos(angle1) + this.dy * Math.sin(angle1);
+    let vy1 = this.dx * -1 * Math.sin(angle1) + this.dy * Math.cos(angle1);
 
+    let vx2 = other.dx * Math.cos(angle1) + other.dy * Math.sin(angle1);
+    let vy2 = other.dx * -1 * Math.sin(angle1) + other.dy * Math.cos(angle1);
+
+    // SWITCH X VELOCITIES
+    let vx1f = vx2;
+    let vx2f = vx1;
+
+    // GIVE BACK VELOCITIES
+    this.dx = vx1f*Math.cos(-angle1) + vy1*Math.sin(-angle1);
+    this.dy = vx1f* -1 * Math.sin(-angle1) + vy1 * Math.cos(-angle1);
+
+    other.dx = vx2f*Math.cos(-angle1) + vy2*Math.sin(-angle1);
+    other.dy = vx2f* -1 * Math.sin(-angle1) + vy2 * Math.cos(-angle1);
+
+    this.collide = true;
+    other.collide = true;
+  }
   destroy(){
     delete rooms[this.rmnm].game.objects[this.id];
   }
